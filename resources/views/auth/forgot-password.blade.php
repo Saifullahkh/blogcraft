@@ -1,0 +1,3 @@
+﻿<x-layouts.app :title="'Forgot Password'">
+    <section class="mx-auto max-w-md px-4 py-16 sm:px-6 lg:px-8"><div class="card p-6"><h1 class="text-2xl font-bold tracking-tight">Reset your password</h1><p class="mt-2 text-sm text-slate-600">Enter your email and we will send a password reset link if mail is configured.</p><form method="POST" action="{{ route('password.email') }}" class="mt-6 grid gap-4">@csrf<div><label class="label">Email</label><input name="email" type="email" value="{{ old('email') }}" class="input" required></div><button class="btn-primary">Send Reset Link</button></form></div></section>
+</x-layouts.app>

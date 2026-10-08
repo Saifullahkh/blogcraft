@@ -1,0 +1,175 @@
+﻿{
+    "name":  "Blog Website AI Chatbot",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "31740745-4c5f-4c1c-948a-80b08561a1a9",
+                                         "responseMode":  "responseNode",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "c5e4a0f7-9e52-49a6-b77f-0b73c4e8b801",
+                      "name":  "Chatbot Webhook",
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -520,
+                                       0
+                                   ],
+                      "webhookId":  "31740745-4c5f-4c1c-948a-80b08561a1a9"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const body = $json.body || {};\nconst message = String(body.message || \u0027\u0027).trim() || \u0027Hello\u0027;\n\nreturn [\n  {\n    json: {\n      openai_payload: {\n        model: \u0027gpt-5-mini\u0027,\n        instructions: [\n          \u0027You are AI Blog Assistant for a Laravel blog website.\u0027,\n          \u0027Answer in the same language as the visitor when possible.\u0027,\n          \u0027Keep replies short, friendly, and practical.\u0027,\n          \u0027If the visitor asks for exact site content you do not have, suggest checking the blog search or contact page.\u0027\n        ].join(\u0027 \u0027),\n        input: [\n          {\n            role: \u0027user\u0027,\n            content: \u0027Page URL: \u0027 + (body.page_url || \u0027unknown\u0027) + \u0027\\nChat ID: \u0027 + (body.chat_id || \u0027anonymous\u0027) + \u0027\\n\\nVisitor message: \u0027 + message\n          }\n        ],\n        max_output_tokens: 350\n      }\n    }\n  }\n];"
+                                     },
+                      "id":  "5304e0d8-f850-4a2b-91dc-bb22a90bd553",
+                      "name":  "Prepare OpenAI Request",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -280,
+                                       0
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://api.openai.com/v1/responses",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "={{ \u0027Bearer \u0027 + ($vars.OPENAI_API_KEY || $env.OPENAI_API_KEY || \u0027\u0027) }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify($json.openai_payload) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "abbbf036-07be-452d-9962-c3a8d829a530",
+                      "name":  "OpenAI Response",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       -40,
+                                       0
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const data = $json || {};\nlet reply = data.output_text;\n\nif (!reply \u0026\u0026 Array.isArray(data.output)) {\n  for (const item of data.output) {\n    if (item \u0026\u0026 Array.isArray(item.content)) {\n      const text = item.content\n        .map((part) =\u003e part.text || part.value || \u0027\u0027)\n        .filter(Boolean)\n        .join(\u0027 \u0027)\n        .trim();\n\n      if (text) {\n        reply = text;\n        break;\n      }\n    }\n  }\n}\n\nreturn [\n  {\n    json: {\n      reply: reply || \u0027Sorry, mujhe response nahi mila.\u0027\n    }\n  }\n];"
+                                     },
+                      "id":  "bcab173b-f995-4b80-9cb9-3494afc37c5d",
+                      "name":  "Format Laravel Reply",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       200,
+                                       0
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "json",
+                                         "responseBody":  "={{ { reply: $json.reply } }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "574920e2-eceb-4b27-8249-44185d55d89c",
+                      "name":  "Respond to Laravel",
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.4,
+                      "position":  [
+                                       440,
+                                       0
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "content":  "## Blog chatbot workflow\n\nSet `OPENAI_API_KEY` in n8n variables or environment variables. Activate this workflow, then use the production webhook URL ending in `/webhook/31740745-4c5f-4c1c-948a-80b08561a1a9` as Laravel `N8N_CHATBOT_WEBHOOK_URL`.",
+                                         "height":  180,
+                                         "width":  360
+                                     },
+                      "id":  "1fe432c0-c48b-4f33-bb42-8e98f8eb0783",
+                      "name":  "Setup Note",
+                      "type":  "n8n-nodes-base.stickyNote",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -520,
+                                       -260
+                                   ]
+                  }
+              ],
+    "pinData":  {
+
+                },
+    "connections":  {
+                        "Chatbot Webhook":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Prepare OpenAI Request",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Prepare OpenAI Request":  {
+                                                       "main":  [
+                                                                    [
+                                                                        {
+                                                                            "node":  "OpenAI Response",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                   },
+                        "OpenAI Response":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Format Laravel Reply",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Format Laravel Reply":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Respond to Laravel",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 }
+                    },
+    "active":  false,
+    "settings":  {
+                     "executionOrder":  "v1"
+                 },
+    "versionId":  "808343b1-74f2-4793-8c92-d6b4faf7d650",
+    "meta":  {
+                 "templateCredsSetupCompleted":  true
+             },
+    "tags":  [
+
+             ]
+}
